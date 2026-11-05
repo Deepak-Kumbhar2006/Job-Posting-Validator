@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from quests.day02.job_board import JobPosting, parse_postings
+from job_board import JobPosting, parse_postings
 
 GOOD = {"title": "ML Engineer Intern", "company": "Rynovi", "url": "https://rynovi.dev/jobs/1", "remote": True}
 
