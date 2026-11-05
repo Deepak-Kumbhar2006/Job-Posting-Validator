@@ -1,30 +1,105 @@
-# Job Posting Validator (Pydantic v2)
+# Job Posting Validator
 
-A "bouncer" for a job board: it takes messy scraped job postings, lets clean ones
-through as typed models, and rejects bad ones with a clear reason.
+A small Python project that demonstrates how to validate and clean job-posting
+data with **Pydantic v2**. It models each posting, normalizes job titles, checks
+cross-field rules, and reports why invalid records were rejected. You can try
+the validator with sample postings or enter a posting interactively.
 
-## Features
+## What it validates
 
-- `JobPosting` model with typed fields, non-negative salary and URL validation
-- Field validator that cleans titles (`"  ML   Engineer "` -> `"ML Engineer"`)
-- Model validator: on-site jobs must have a location
-- `parse_postings()` returns valid postings plus one error line per bad record
-- Extras: all errors per record, JSON in/out (`clean.json`, `rejected.txt`), interactive CLI
+The `JobPosting` model has these fields:
 
-## Run it
+| Field          | Type               | Rules                                                                               |
+| -------------- | ------------------ | ----------------------------------------------------------------------------------- |
+| `title`      | string             | Required; leading, trailing, and repeated whitespace is cleaned up; cannot be blank |
+| `company`    | string             | Required                                                                            |
+| `url`        | URL                | Required; must be a valid URL                                                       |
+| `salary_lpa` | number or `None` | Optional; cannot be negative                                                        |
+| `remote`     | boolean            | Defaults to `False`                                                               |
+| `location`   | string or `None` | Optional for remote jobs; required for on-site jobs                                 |
 
-    pytest quests/day02 -v
-    python -m quests.day02.run_board
-    python -m quests.day02.run_interactive
+`parse_postings()` processes a list of records and returns the valid
+`JobPosting` objects and one readable validation error for each rejected record.
 
-## What I learned
+## Requirements
 
-- **Type coercion:** in lax mode `"24"` becomes `24.0` and `"yes"` becomes `True`;
-  invalid values like `"abc"` or `"maybe"` are rejected. `strict=True` would reject
-  the strings too.
-- **Field vs model validator:** a field validator checks or cleans one field
-  (the title). A model validator is needed when a rule compares several fields
-  (`remote` and `location`). It runs after the field checks pass, so a record with
-  a bad URL and a missing location reports only the URL error first.
+- Python 3.10 or newer
+- Pydantic 2
+- Pytest (only needed to run the tests)
 
----
+## Setup
+
+Run these commands from the project directory. Create and activate a virtual
+environment, then install the dependencies:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install "pydantic>=2,<3" pytest
+```
+
+On macOS or Linux, activate the virtual environment with:
+
+```sh
+source .venv/bin/activate
+```
+
+## Run the project
+
+Run the sample validation demo:
+
+```sh
+python -m quests.day02.run_board
+```
+
+Start the interactive validator and follow the prompts:
+
+```sh
+python -m quests.day02.run_interactive
+```
+
+The interactive program asks for a title, company, job URL, and optional salary,
+remote status, and location. Enter `y` when prompted to validate another
+posting; any other response exits.
+
+## Run the tests
+
+From the project directory, run:
+
+```sh
+python -m pytest -v
+```
+
+## Use the validator in Python
+
+```python
+from quests.day02.job_board import JobPosting, parse_postings
+
+posting = JobPosting(
+    title="  ML   Engineer ",
+    company="Example",
+    url="https://example.com/jobs/1",
+    remote=True,
+)
+print(posting.title)  # ML Engineer
+
+records = [
+    {
+        "title": "Data Scientist",
+        "company": "Example",
+        "url": "https://example.com/jobs/2",
+        "location": "Mumbai",
+    }
+]
+valid_postings, errors = parse_postings(records)
+```
+
+## Project layout
+
+```text
+quests/day02/job_board.py       Pydantic model and batch validation
+quests/day02/run_board.py       Sample-data demo
+quests/day02/run_interactive.py Interactive prompt
+test_job_board.py               Automated tests
+```
